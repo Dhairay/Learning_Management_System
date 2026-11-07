@@ -2,13 +2,15 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { engagementApi } from '../../api/engagementApi';
+import { useToast } from '../../composables/useToast';
 import type { CourseReview } from '../../types';
 import { 
-  Star, ArrowLeft, Send, CheckCircle2, MessageSquare
+  Star, ArrowLeft, Send, CheckCircle2, MessageSquare, Award, ThumbsUp
 } from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 
 const courseId = route.params.courseId as string;
 const reviewsData = ref<{
@@ -44,17 +46,21 @@ onMounted(() => {
 });
 
 async function submitReview() {
+  if (!myReviewText.value.trim()) {
+    toast.error('Review Required', 'Please share brief feedback on your course experience.');
+    return;
+  }
   submitting.value = true;
   try {
     await engagementApi.submitReview(courseId, {
       rating: myRating.value,
       review_text: myReviewText.value
     });
-    alert('Thank you! Your verified course review has been submitted.');
+    toast.success('Review Published!', 'Thank you! Your verified student review is live.');
     myReviewText.value = '';
     await loadReviews();
   } catch (err: any) {
-    alert(err.message || 'Only enrolled students can submit a review.');
+    toast.error('Review Not Allowed', err.message || 'Only enrolled students who accessed lessons can submit reviews.');
   } finally {
     submitting.value = false;
   }
@@ -137,7 +143,13 @@ async function submitReview() {
     </div>
 
     <!-- Review List -->
-    <div class="space-y-4">
+    <div v-if="reviewsData.reviews.length === 0" class="glass-panel p-8 text-center border border-slate-800 rounded-xl">
+      <MessageSquare class="w-10 h-10 text-slate-500 mx-auto mb-2" />
+      <h3 class="text-base font-bold text-white mb-1">No reviews published yet</h3>
+      <p class="text-xs text-slate-400">Enrolled students: be the first to rate this masterclass!</p>
+    </div>
+
+    <div v-else class="space-y-4">
       <div 
         v-for="rev in reviewsData.reviews" 
         :key="rev.id"

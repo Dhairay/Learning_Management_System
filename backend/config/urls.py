@@ -5,24 +5,40 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/api/docs/', permanent=False), name='root-redirect'),
     path('admin/', admin.site.urls),
-    
-    # API v1 routes
-    path('api/v1/auth/', include('apps.accounts.urls_auth')),
-    path('api/v1/me/', include('apps.accounts.urls_me')),
-    path('api/v1/organizations/', include('apps.accounts.urls_orgs')),
-    path('api/v1/courses/', include('apps.courses.urls')),
-    path('api/v1/', include('apps.enrollments.urls')),
-    path('api/v1/learning/', include('apps.learning.urls')),
-    path('api/v1/', include('apps.assessments.urls')),
-    path('api/v1/', include('apps.live_sessions.urls')),
-    path('api/v1/', include('apps.discussions.urls')),
-    path('api/v1/', include('apps.certificates.urls')),
-    path('api/v1/media/', include('apps.media_assets.urls')),
-    path('api/v1/notifications/', include('apps.notifications.urls')),
-    path('api/v1/audit/', include('apps.audit.urls')),
+
+    # OpenAPI 3 Schema & Swagger UI endpoints (supporting all common aliases)
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/docs', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('api/swagger/', SpectacularSwaggerView.as_view(url_name='schema')),
+    path('api/swagger', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('api/v1/schema/', SpectacularAPIView.as_view()),
+    path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema')),
+    path('api/v1/docs', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('api/v1/swagger/', SpectacularSwaggerView.as_view(url_name='schema')),
+    path('api/v1/swagger', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('api/v1/swagger.html', SpectacularSwaggerView.as_view(url_name='schema')),
+    path('api/v1/', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('redoc/', SpectacularRedocView.as_view(url_name='schema')),
+    path('swagger/', SpectacularSwaggerView.as_view(url_name='schema')),
+    path('swagger', RedirectView.as_view(url='/api/docs/', permanent=False)),
+    path('swagger.html', SpectacularSwaggerView.as_view(url_name='schema')),
+    path('docs/', SpectacularSwaggerView.as_view(url_name='schema')),
+    path('docs', RedirectView.as_view(url='/api/docs/', permanent=False)),
+
+    # API routes managed and versioned directly inside controllers
+    path('api/', include('controllers.urls')),
 ]
 
 if settings.DEBUG:

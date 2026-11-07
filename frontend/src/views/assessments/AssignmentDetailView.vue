@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { assessmentApi } from '../../api/assessmentApi';
+import { useToast } from '../../composables/useToast';
 import type { Assignment, AssignmentSubmission } from '../../types';
 import { 
   Award, FileText, CheckCircle2, Clock, ArrowLeft, Send, AlertCircle
@@ -9,6 +10,7 @@ import {
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 
 const assignmentId = route.params.assignmentId as string;
 const orgSlug = route.params.orgSlug as string;
@@ -32,7 +34,7 @@ async function loadData() {
       fileUrl.value = submission.value.file_url || '';
     }
   } catch (e: any) {
-    alert(e.message || 'Failed to load assignment.');
+    toast.error('Failed to load assignment', e.message);
   } finally {
     loading.value = false;
   }
@@ -44,7 +46,7 @@ onMounted(() => {
 
 async function handleSubmit() {
   if (!submissionText.value.trim() && !fileUrl.value.trim()) {
-    alert('Please provide your solution text or reference link.');
+    toast.warning('Please provide your solution text or reference link.');
     return;
   }
   submitting.value = true;
@@ -53,9 +55,9 @@ async function handleSubmit() {
       content_text: submissionText.value,
       file_url: fileUrl.value
     });
-    alert('Assignment submission uploaded successfully!');
+    toast.success('Assignment Submitted!', 'Your solution has been submitted for instructor review.');
   } catch (e: any) {
-    alert(e.message || 'Submission failed.');
+    toast.error('Submission failed', e.message);
   } finally {
     submitting.value = false;
   }

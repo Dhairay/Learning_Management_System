@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { assessmentApi } from '../../api/assessmentApi';
+import { useToast } from '../../composables/useToast';
 import type { Quiz, QuizAttempt } from '../../types';
 import { 
   HelpCircle, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, 
@@ -10,6 +11,7 @@ import {
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 
 const quizId = route.params.quizId as string;
 const orgSlug = route.params.orgSlug as string;
@@ -38,7 +40,7 @@ async function loadQuiz() {
     pastAttempts.value = data.past_attempts;
     canAttempt.value = data.can_attempt;
   } catch (e: any) {
-    alert(e.message || 'Failed to load quiz');
+    toast.error('Failed to load quiz', e.message);
   } finally {
     loading.value = false;
   }
@@ -54,8 +56,9 @@ async function startAttempt() {
     currentAttemptId.value = attempt.id;
     answers.value = {};
     submissionResult.value = null;
+    toast.info('Assessment Started', `Timer running: ${quiz.value?.time_limit_minutes || 30} minutes`);
   } catch (e: any) {
-    alert(e.message || 'Failed to start quiz attempt');
+    toast.error('Cannot start quiz attempt', e.message);
   }
 }
 
@@ -77,10 +80,16 @@ async function submitQuiz() {
   if (!currentAttemptId.value) return;
   submitting.value = true;
   try {
-    submissionResult.value = await assessmentApi.submitQuiz(currentAttemptId.value, answers.value);
+    const res = await assessmentApi.submitQuiz(currentAttemptId.value, answers.value);
+    submissionResult.value = res;
+    if (res.passed) {
+      toast.success('Congratulations! Quiz Passed!', `Your score: ${res.score}% (Pass threshold: ${res.pass_percentage}%)`);
+    } else {
+      toast.warning('Attempt Submitted', `Your score: ${res.score}%. Minimum passing percentage is ${res.pass_percentage}%.`);
+    }
     await loadQuiz();
   } catch (e: any) {
-    alert(e.message || 'Failed to submit quiz');
+    toast.error('Failed to submit quiz', e.message);
   } finally {
     submitting.value = false;
   }

@@ -2,12 +2,14 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { authApi } from '../../api/authApi';
+import { useToast } from '../../composables/useToast';
 import type { OrganizationMembership } from '../../types';
 import { 
   Shield, UserPlus, Users, Mail, UserCheck, Check, AlertCircle
 } from 'lucide-vue-next';
 
 const route = useRoute();
+const toast = useToast();
 const orgSlug = ref(route.params.orgSlug as string || 'acme-academy');
 
 const members = ref<OrganizationMembership[]>([]);
@@ -32,18 +34,21 @@ onMounted(() => {
 });
 
 async function sendInvite() {
-  if (!inviteEmail.value.trim()) return;
+  if (!inviteEmail.value.trim()) {
+    toast.warning('Please enter an email address');
+    return;
+  }
   inviting.value = true;
   try {
     await authApi.inviteMember(orgSlug.value, {
-      email: inviteEmail.value,
+      email: inviteEmail.value.trim(),
       role: inviteRole.value
     });
-    alert(`Invitation dispatched to ${inviteEmail.value}!`);
+    toast.success('Invitation Sent!', `An invite link has been dispatched to ${inviteEmail.value.trim()}.`);
     inviteEmail.value = '';
     await loadMembers();
   } catch (err: any) {
-    alert(err.message || 'Failed to send invitation');
+    toast.error('Failed to send invitation', err.message);
   } finally {
     inviting.value = false;
   }
@@ -52,10 +57,10 @@ async function sendInvite() {
 async function changeRole(membershipId: string, newRole: string) {
   try {
     await authApi.updateMemberRole(orgSlug.value, membershipId, newRole);
-    alert('Member role updated!');
+    toast.success('Role Updated!', `Member permissions updated to ${newRole}.`);
     await loadMembers();
   } catch (err: any) {
-    alert(err.message || 'Failed to update member role');
+    toast.error('Failed to update member role', err.message);
   }
 }
 </script>
@@ -87,8 +92,7 @@ async function changeRole(membershipId: string, newRole: string) {
         <div class="flex gap-2">
           <select v-model="inviteRole" class="input-field text-sm">
             <option value="STUDENT">Student</option>
-            <option value="INSTRUCTOR">Instructor</option>
-            <option value="ORG_ADMIN">Organization Admin</option>
+            <option value="INSTRUCTOR">Teacher</option>
           </select>
           <button 
             @click="sendInvite" 
@@ -148,8 +152,7 @@ async function changeRole(membershipId: string, newRole: string) {
                   class="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-300 outline-none"
                 >
                   <option value="STUDENT">Set Student</option>
-                  <option value="INSTRUCTOR">Set Instructor</option>
-                  <option value="ORG_ADMIN">Set Org Admin</option>
+                  <option value="INSTRUCTOR">Set Teacher</option>
                 </select>
               </td>
             </tr>

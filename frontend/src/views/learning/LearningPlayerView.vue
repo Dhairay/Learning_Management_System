@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { courseApi } from '../../api/courseApi';
 import { enrollmentApi } from '../../api/enrollmentApi';
+import { useToast } from '../../composables/useToast';
 import type { Course, LessonSummary } from '../../types';
 import { 
   PlayCircle, CheckCircle2, Circle, ArrowLeft, ArrowRight, 
@@ -11,6 +12,7 @@ import {
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 
 const courseId = route.params.courseId as string;
 const lessonId = ref(route.params.lessonId as string);
@@ -71,7 +73,7 @@ async function loadLesson() {
       }
     }
   } catch (e: any) {
-    alert(e.message || 'Failed to load lesson content.');
+    toast.error(e.message || 'Failed to load lesson content.');
   } finally {
     loading.value = false;
   }
@@ -106,10 +108,11 @@ async function toggleLessonCompletion() {
         }
       }
     }
+    toast.success('Lesson Completed!', `Progress updated to ${res.course_progress_percentage}%.`);
     // If next lesson exists, navigate
     navigateToNextLesson();
   } catch (e: any) {
-    alert(e.message || 'Failed to update progress');
+    toast.error('Progress update failed', e.message);
   }
 }
 

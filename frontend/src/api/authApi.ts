@@ -8,11 +8,20 @@ export const authApi = {
       body: JSON.stringify(data),
     }),
 
-  register: (data: { email: string; password: string; first_name?: string; last_name?: string; organization_name?: string }) =>
+  register: (data: { 
+    email: string; 
+    password: string; 
+    first_name?: string; 
+    last_name?: string; 
+    role?: 'STUDENT' | 'INSTRUCTOR' | 'ORG_ADMIN';
+    organization_name?: string; 
+    organization_slug?: string;
+  }) =>
     apiRequest<{ user: User; tokens: { access: string; refresh: string } }>('/auth/register/', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
 
   getProfile: () =>
     apiRequest<{ user: User; memberships: OrganizationMembership[] }>('/me/'),
@@ -52,4 +61,33 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({ token }),
     }),
+
+  getRoles: () =>
+    apiRequest<Array<{ id: string; name: string; display_name: string; description: string }>>('/auth/roles/'),
+
+  provisionAdminUser: (data: {
+    email: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+    role: 'SUPER_ADMIN' | 'ADMIN';
+    institute_name?: string;
+    institute_slug?: string;
+    description?: string;
+  }) =>
+    apiRequest<{
+      detail: string;
+      user: User;
+      organization?: Organization;
+      memberships: OrganizationMembership[];
+      tokens: { access: string; refresh: string };
+    }>('/auth/admin-users/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  getUsersDirectory: (roleFilter?: string) => {
+    const query = roleFilter ? `?role=${encodeURIComponent(roleFilter)}` : '';
+    return apiRequest<User[]>(`/auth/users/${query}`);
+  },
 };

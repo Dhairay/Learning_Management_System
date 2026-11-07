@@ -21,6 +21,32 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(email, password, **extra_fields)
 
+class Role(models.Model):
+    ROLE_SUPER_ADMIN = 'SUPER_ADMIN'
+    ROLE_ADMIN = 'ADMIN'
+    ROLE_TEACHER = 'TEACHER'
+    ROLE_STUDENT = 'STUDENT'
+
+    ROLE_CHOICES = [
+        (ROLE_SUPER_ADMIN, 'Super Admin'),
+        (ROLE_ADMIN, 'Admin (Institute Owner)'),
+        (ROLE_TEACHER, 'Teacher'),
+        (ROLE_STUDENT, 'Student'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, unique=True, choices=ROLE_CHOICES)
+    display_name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'roles'
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.display_name} ({self.name})"
+
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, db_index=True)
@@ -30,6 +56,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     bio = models.TextField(blank=True, default='')
     headline = models.CharField(max_length=255, blank=True, default='')
     
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -48,6 +75,22 @@ class User(AbstractBaseUser, PermissionsMixin):
     def full_name(self):
         name = f"{self.first_name} {self.last_name}".strip()
         return name if name else self.email.split('@')[0]
+
+    @property
+    def role_name(self):
+        if self.role:
+            return self.role.name
+        if self.is_superuser or self.is_staff:
+            return 'SUPER_ADMIN'
+        membership = self.memberships.first()
+        if membership:
+            if membership.role in ['PLATFORM_ADMIN', 'SUPER_ADMIN']:
+                return 'SUPER_ADMIN'
+            if membership.role in ['ORG_ADMIN', 'ADMIN']:
+                return 'ADMIN'
+            if membership.role in ['INSTRUCTOR', 'TEACHER']:
+                return 'TEACHER'
+        return 'STUDENT'
 
     def __str__(self):
         return self.email
@@ -80,8 +123,11 @@ class Organization(models.Model):
 class OrganizationMembership(models.Model):
     ROLE_CHOICES = [
         ('PLATFORM_ADMIN', 'Platform Administrator'),
+        ('SUPER_ADMIN', 'Super Admin'),
         ('ORG_ADMIN', 'Organization Administrator'),
+        ('ADMIN', 'Admin (Institute Owner)'),
         ('INSTRUCTOR', 'Instructor'),
+        ('TEACHER', 'Teacher'),
         ('STUDENT', 'Student'),
     ]
     STATUS_CHOICES = [

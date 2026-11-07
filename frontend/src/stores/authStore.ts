@@ -76,9 +76,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(data: { email: string; password: string; first_name?: string; last_name?: string; organization_name?: string }) {
+  async function register(data: { 
+    email: string; 
+    password: string; 
+    first_name?: string; 
+    last_name?: string; 
+    role?: 'STUDENT' | 'INSTRUCTOR' | 'ORG_ADMIN';
+    organization_name?: string; 
+    organization_slug?: string;
+  }) {
     loading.value = true;
     error.value = null;
+
     try {
       const resp = await authApi.register(data);
       localStorage.setItem('access_token', resp.tokens.access);

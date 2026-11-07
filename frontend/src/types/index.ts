@@ -1,4 +1,11 @@
-export type Role = 'PLATFORM_ADMIN' | 'ORG_ADMIN' | 'INSTRUCTOR' | 'STUDENT';
+export type Role = 'PLATFORM_ADMIN' | 'SUPER_ADMIN' | 'ORG_ADMIN' | 'ADMIN' | 'INSTRUCTOR' | 'TEACHER' | 'STUDENT';
+
+export interface RoleModel {
+  id: string;
+  name: string;
+  display_name: string;
+  description: string;
+}
 
 export interface User {
   id: string;
@@ -9,7 +16,10 @@ export interface User {
   avatar_url?: string;
   bio?: string;
   headline?: string;
+  role?: RoleModel;
+  role_name?: string;
   is_staff?: boolean;
+  is_superuser?: boolean;
 }
 
 export interface Organization {

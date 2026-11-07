@@ -5,11 +5,13 @@ import { certificateApi } from '../../api/certificateApi';
 import type { Certificate } from '../../types';
 import { 
   ShieldCheck, Search, CheckCircle, XCircle, Award, 
-  ArrowLeft, Building, Calendar, User
+  ArrowLeft, Building, Calendar, User, Sun, Moon
 } from 'lucide-vue-next';
+import { useTheme } from '../../composables/useTheme';
 
 const route = useRoute();
 const router = useRouter();
+const { isDark, toggleTheme } = useTheme();
 
 const certNumber = ref((route.params.certificateNumber as string) || '');
 const verificationResult = ref<{
@@ -45,6 +47,22 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen max-w-3xl mx-auto p-4 sm:p-12 space-y-8 animate-fade-in">
+    <!-- Return Link & Theme Switcher -->
+    <div class="flex items-center justify-between">
+      <router-link to="/" class="text-xs text-slate-400 hover:text-white inline-flex items-center gap-1.5 transition">
+        <ArrowLeft class="w-3.5 h-3.5" /> Return to Course Catalog
+      </router-link>
+      <button 
+        @click="toggleTheme" 
+        type="button"
+        class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-100 transition flex items-center justify-center"
+        :title="isDark ? 'Switch to Educational Light Mode' : 'Switch to Dark Mode'"
+      >
+        <Sun v-if="isDark" class="w-3.5 h-3.5 text-amber-400" />
+        <Moon v-else class="w-3.5 h-3.5 text-indigo-500" />
+      </button>
+    </div>
+
     <div class="text-center space-y-3">
       <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-cyan-500 mx-auto flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white">
         <ShieldCheck class="w-7 h-7" />

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'apps.media_assets',
     'apps.notifications',
     'apps.audit',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -111,6 +112,22 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'LMS Enterprise Modular Monolith API',
+    'DESCRIPTION': 'Comprehensive REST API documentation for the multi-tenant LMS Platform, featuring authentication, RBAC, course catalog, learning player, assessments, live sessions, discussions, certificates, and organization management.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_SETTINGS': {
+        'persistAuthorization': True,
+        'displayRequestDuration': True,
+        'filter': True,
+        'docExpansion': 'list',
+        'defaultModelsExpandDepth': 1,
+    },
 }
 
 SIMPLE_JWT = {

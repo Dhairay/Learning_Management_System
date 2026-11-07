@@ -6,7 +6,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from django.utils import timezone
-from apps.accounts.models import User, Organization, OrganizationMembership
+from apps.accounts.models import User, Organization, OrganizationMembership, Role
 from apps.courses.models import Category, Course, CoursePrice, CourseSection, Lesson
 from apps.media_assets.models import MediaAsset
 from apps.enrollments.models import Enrollment, Entitlement, Order, OrderItem, Payment
@@ -25,6 +25,24 @@ from apps.audit.models import AuditLog
 def seed():
     print("Seeding LMS Enterprise Platform database...")
 
+    # 0. Seed Static Roles Table
+    super_admin_role, _ = Role.objects.update_or_create(
+        name=Role.ROLE_SUPER_ADMIN,
+        defaults={'display_name': 'Super Admin', 'description': 'Platform Super Administrator with full unrestricted access across all institutes and platform configurations.'}
+    )
+    admin_role, _ = Role.objects.update_or_create(
+        name=Role.ROLE_ADMIN,
+        defaults={'display_name': 'Admin (Institute Owner)', 'description': 'Institute Owner/Administrator. Manages the institute, faculty (teachers), students, and institute courses.'}
+    )
+    teacher_role, _ = Role.objects.update_or_create(
+        name=Role.ROLE_TEACHER,
+        defaults={'display_name': 'Teacher', 'description': 'Faculty and course author. Manages curriculum, lessons, assignments, quizzes, and grading.'}
+    )
+    student_role, _ = Role.objects.update_or_create(
+        name=Role.ROLE_STUDENT,
+        defaults={'display_name': 'Student', 'description': 'Enrolled learner taking courses, submitting assignments, and earning certificates.'}
+    )
+
     # 1. Create Users
     admin_user, _ = User.objects.get_or_create(
         email='admin@lms.local',
@@ -34,6 +52,7 @@ def seed():
             'headline': 'Chief Learning Officer & Platform Admin',
             'is_staff': True,
             'is_superuser': True,
+            'role': super_admin_role,
         }
     )
     admin_user.set_password('AdminPass123!')

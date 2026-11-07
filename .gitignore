@@ -28,7 +28,10 @@ wheels/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/uploads/
+media/
+backend/media/
+.env
+.env.local
 
 # Node & Frontend
 node_modules/

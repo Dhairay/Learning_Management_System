@@ -24,10 +24,17 @@ class LessonSummarySerializer(serializers.ModelSerializer):
 
 class LessonDetailSerializer(serializers.ModelSerializer):
     media_asset = MediaAssetSerializer(read_only=True)
+    playback_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
-        fields = ['id', 'section', 'title', 'lesson_type', 'media_asset', 'content_text', 'position', 'is_required', 'duration_seconds']
+        fields = ['id', 'section', 'title', 'lesson_type', 'media_asset', 'playback_url', 'content_text', 'position', 'is_required', 'duration_seconds']
+
+    def get_playback_url(self, obj):
+        if obj.media_asset and obj.media_asset.playback_url:
+            return obj.media_asset.playback_url
+        return ''
+
 
 class CourseSectionSerializer(serializers.ModelSerializer):
     lessons = LessonSummarySerializer(many=True, read_only=True)
@@ -45,6 +52,7 @@ class CourseListSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField(source='organization.name', read_only=True)
     organization_slug = serializers.CharField(source='organization.slug', read_only=True)
     instructor_name = serializers.SerializerMethodField()
+    slug = serializers.SlugField(required=False, allow_blank=True)
 
     class Meta:
         model = Course
@@ -55,6 +63,19 @@ class CourseListSerializer(serializers.ModelSerializer):
             'total_lessons', 'total_duration_seconds', 'created_at'
         ]
 
+    def validate(self, attrs):
+        if not attrs.get('slug'):
+            from django.utils.text import slugify
+            title = attrs.get('title', 'course')
+            base_slug = slugify(title) or 'course'
+            slug = base_slug
+            counter = 1
+            while Course.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            attrs['slug'] = slug
+        return attrs
+
     def get_instructor_name(self, obj):
         if obj.instructor_membership and obj.instructor_membership.user:
             return obj.instructor_membership.user.full_name
@@ -62,6 +83,7 @@ class CourseListSerializer(serializers.ModelSerializer):
 
 class CourseDetailSerializer(CourseListSerializer):
     sections = CourseSectionSerializer(many=True, read_only=True)
+    description = serializers.CharField(required=False, allow_blank=True, default='')
 
     class Meta(CourseListSerializer.Meta):
         fields = CourseListSerializer.Meta.fields + ['description', 'sections', 'updated_at']

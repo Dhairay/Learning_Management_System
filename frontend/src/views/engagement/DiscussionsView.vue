@@ -2,13 +2,15 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { engagementApi } from '../../api/engagementApi';
+import { useToast } from '../../composables/useToast';
 import type { DiscussionThread } from '../../types';
 import { 
-  MessageSquare, Send, Reply, ArrowLeft, User, Clock, CornerDownRight
+  MessageSquare, Send, Reply, ArrowLeft, User, Clock, CornerDownRight, Plus
 } from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 
 const courseId = route.params.courseId as string;
 const threads = ref<DiscussionThread[]>([]);
@@ -34,18 +36,22 @@ onMounted(() => {
 });
 
 async function createThread() {
-  if (!newTitle.value.trim() || !newContent.value.trim()) return;
+  if (!newTitle.value.trim() || !newContent.value.trim()) {
+    toast.error('Missing Fields', 'Please specify a title and question details.');
+    return;
+  }
   try {
     await engagementApi.createDiscussion(courseId, {
       title: newTitle.value,
       content: newContent.value,
     });
+    toast.success('Question Posted', 'Your technical question is now visible to peers and instructors.');
     newTitle.value = '';
     newContent.value = '';
     showNewThreadModal.value = false;
     await loadDiscussions();
   } catch (e: any) {
-    alert(e.message || 'Failed to post thread');
+    toast.error('Failed to Post', e.message || 'Failed to post thread');
   }
 }
 
@@ -54,10 +60,11 @@ async function postReply(threadId: string) {
   if (!content || !content.trim()) return;
   try {
     await engagementApi.replyDiscussion(threadId, { content });
+    toast.success('Reply Posted');
     replyContent.value[threadId] = '';
     await loadDiscussions();
   } catch (e: any) {
-    alert(e.message || 'Failed to post reply');
+    toast.error('Failed to Reply', e.message || 'Failed to post reply');
   }
 }
 </script>
@@ -152,22 +159,24 @@ async function postReply(threadId: string) {
     </div>
 
     <!-- New Thread Modal -->
-    <div v-if="showNewThreadModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="glass-panel p-6 max-w-lg w-full border border-slate-800 space-y-4 animate-fade-in">
-        <h3 class="text-lg font-bold text-white">Ask Question in Course Forum</h3>
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Topic / Subject</label>
-          <input v-model="newTitle" type="text" placeholder="e.g. Invariant validation in concurrent checkout" class="input-field text-sm" />
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-400 mb-1">Details &amp; Context</label>
-          <textarea v-model="newContent" rows="4" placeholder="Explain the specific scenario, edge case, or code question..." class="input-field text-sm"></textarea>
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button @click="showNewThreadModal = false" class="btn-secondary text-xs">Cancel</button>
-          <button @click="createThread" class="btn-primary text-xs">Post Question</button>
+    <Teleport to="body">
+      <div v-if="showNewThreadModal" class="modal-backdrop-wrap" @click.self="showNewThreadModal = false">
+        <div class="modal-box max-w-lg space-y-4">
+          <h3 class="text-lg font-bold text-white mb-2">Ask Question in Course Forum</h3>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Topic / Subject</label>
+            <input v-model="newTitle" type="text" placeholder="e.g. Invariant validation in concurrent checkout" class="input-field text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Details &amp; Context</label>
+            <textarea v-model="newContent" rows="4" placeholder="Explain the specific scenario, edge case, or code question..." class="input-field text-sm"></textarea>
+          </div>
+          <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+            <button @click="showNewThreadModal = false" class="btn-secondary text-xs px-4 py-2">Cancel</button>
+            <button @click="createThread" class="btn-primary text-xs px-4 py-2">Post Question</button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>

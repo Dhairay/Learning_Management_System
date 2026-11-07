@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { enrollmentApi } from '../../api/enrollmentApi';
 import { certificateApi } from '../../api/certificateApi';
+import { useToast } from '../../composables/useToast';
 import type { Enrollment } from '../../types';
 import { 
   BookOpen, PlayCircle, Award, CheckCircle, Clock, 
@@ -11,6 +12,7 @@ import {
 
 const router = useRouter();
 const route = useRoute();
+const toast = useToast();
 
 const enrollments = ref<Enrollment[]>([]);
 const loading = ref(true);
@@ -23,7 +25,7 @@ async function loadEnrollments() {
   try {
     enrollments.value = await enrollmentApi.getMyEnrollments();
   } catch (e: any) {
-    console.error('Failed to load enrollments', e);
+    toast.error('Failed to load courses', e.message);
   } finally {
     loading.value = false;
   }
@@ -37,10 +39,10 @@ async function claimCertificate(enrollmentId: string) {
   issuing.value = enrollmentId;
   try {
     const cert = await certificateApi.issueCertificate(enrollmentId);
-    alert(`Certificate generated successfully! Credential ID: ${cert.certificate_number}`);
+    toast.success('Certificate Issued!', `Official Credential ID: ${cert.certificate_number}`);
     router.push(`/org/${orgSlug.value}/certificates/${cert.id}`);
   } catch (err: any) {
-    alert(err.message || 'Cannot issue certificate yet. Complete all required lessons, quizzes, and assignments first.');
+    toast.warning('Certificate Ineligible', err.message || 'Complete all required lessons, quizzes, and assignments first.');
   } finally {
     issuing.value = null;
   }

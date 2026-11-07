@@ -57,7 +57,9 @@ export async function apiRequest<T = any>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: `Error ${response.status}: ${response.statusText}` }));
-    const message = errorData.detail || errorData.message || (typeof errorData === 'object' ? Object.values(errorData).flat().join(', ') : 'An unexpected error occurred');
+    const message = errorData.detail || errorData.message || (typeof errorData === 'object' 
+      ? Object.entries(errorData).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(' ') : v}`).join(' | ') 
+      : 'An unexpected error occurred');
     throw new Error(message);
   }
 
